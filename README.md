@@ -17,7 +17,6 @@ The script supports three terminal modes:
 Run the project with:
 
 ```powershell
-cd C:\Users\Thinkpad\Documents\course_5\bambam\project
 pip install -r requirements.txt
 python .\project_starter.py
 ```
