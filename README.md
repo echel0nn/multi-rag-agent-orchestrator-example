@@ -128,6 +128,8 @@ The evaluation results also show that the system performs real business actions.
 
 3. Refine fulfillment timing and supplier planning. Delivery feasibility is currently based on stock levels and supplier date estimation, but the model could be extended with supplier-specific lead times, reorder cost optimization, and prioritization rules for partial fulfillment.
 
+4. Although the workflow completes many requests successfully, the simulation suggests that the current quote strategy is not maximizing profitability.
+
 ## Submission Notes
 
 This repository includes:
