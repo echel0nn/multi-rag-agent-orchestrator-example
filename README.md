@@ -6,20 +6,53 @@ an experiment to write down my AI agents in future
 ![image](./main.png)
 
 ```mermaid
-flowchart TD
-    A["Customer Request"] --> B["OrchestratorAgent"]
-    B --> C["RequestAnalysisAgent"]
-    C --> D["Extract Metadata And Items"]
-    D --> E["Normalize Items To Catalog"]
-    E --> F["InventoryRetrievalAgent"]
-    F --> G["Check Stock And Build Reorder Plan"]
-    E --> H["QuoteRetrievalAgent"]
-    H --> I["Retrieve Similar Quotes And Build Pricing"]
-    G --> J["SynthesisFulfillmentAgent"]
-    I --> J
-    J --> K["Make Final Decision"]
-    K --> L["Write Transactions And Log Memory"]
-    L --> M["Customer-Facing Result"]
+flowchart LR
+    U["Customer Request"] --> O["OrchestratorAgent\nResponsibility: sequence stages and pass structured state"]
+
+    O -->|"raw_request"| RA1
+    subgraph RA["RequestAnalysisAgent\nResponsibility: extract metadata, items, and catalog matches"]
+        RA1["analyze_request_metadata_tool\nPurpose: validate request metadata\nHelpers: update_workflow_context"]
+        RA2["parse_request_items_tool\nPurpose: structure item lines from the request\nHelpers: parse_request_items_from_text"]
+        RA3["normalize_request_items_tool\nPurpose: map parsed items to supported catalog items\nHelpers: normalize_request_items, resolve_catalog_item, convert_item_quantity"]
+        RA1 -->|"metadata"| RA2
+        RA2 -->|"parsed_items"| RA3
+    end
+    RA1 -->|"request_metadata, request_profile, dates"| O
+    RA2 -->|"parsed_items"| O
+    RA3 -->|"normalized_items, unsupported_items, ambiguous_items"| O
+
+    O -->|"normalized_items, request_date, delivery_deadline"| IR1
+    subgraph IR["InventoryRetrievalAgent\nResponsibility: check stock and prepare reorders"]
+        IR1["assess_inventory_tool\nPurpose: compute availability, shortages, and feasibility\nHelpers: get_stock_level, get_supplier_delivery_date"]
+        IR2["build_reorder_plan_tool\nPurpose: convert shortages into reorder actions\nHelpers: direct tool logic from inventory_result"]
+        IR1 -->|"inventory_result"| IR2
+    end
+    IR1 -->|"inventory_result"| O
+    IR2 -->|"reorder_plan"| O
+
+    O -->|"normalized_items, request_profile"| QR1
+    subgraph QR["QuoteRetrievalAgent\nResponsibility: retrieve pricing context and generate quote"]
+        QR1["retrieve_similar_quotes_tool\nPurpose: find relevant historical quotes\nHelpers: search_quote_history"]
+        QR2["generate_quote_tool\nPurpose: compute quote totals, discount, and pricing notes\nHelpers: direct tool logic using catalog prices"]
+        QR1 -->|"similar_quotes"| QR2
+    end
+    QR1 -->|"similar_quotes"| O
+    QR2 -->|"quote_result"| O
+
+    O -->|"normalized_items, unsupported_items, ambiguous_items, inventory_result, reorder_plan, quote_result"| SF1
+    subgraph SF["SynthesisFulfillmentAgent\nResponsibility: decide outcome and persist results"]
+        SF1["finalize_decision_tool\nPurpose: choose approved_full, approved_partial, delayed, or declined\nHelpers: direct tool logic on validated stage outputs"]
+        SF2["write_transactions_tool\nPurpose: write approved sales and stock-order transactions\nHelpers: create_transaction"]
+        SF3["log_request_memory_tool\nPurpose: store completed request outcome in long memory\nHelpers: direct database write to request_memory"]
+        SF1 -->|"decision, quote_total, notes"| SF2
+        SF1 -->|"decision, quote_total, delivery_feasible, notes"| SF3
+    end
+    SF1 -->|"final_decision"| O
+    SF2 -->|"transaction_summary"| O
+    SF3 -->|"memory_log_summary"| O
+
+    O -->|"decision, quote total, notes"| R["Customer-Facing Result"]
+
 ```
 
 
