@@ -6,6 +6,7 @@ This project implements a five-agent workflow for the fictional Munder Difflin p
 ## Showcase
 
 ![image](./main.png)
+![image](./final_report.png)
 
 The script supports three terminal modes:
 
