@@ -1,0 +1,8 @@
+pandas==2.2.3
+numpy
+openai==1.76.0
+SQLAlchemy==2.0.40
+python-dotenv==1.1.0
+pydantic
+smolagents
+rich
