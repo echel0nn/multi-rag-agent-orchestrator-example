@@ -37,9 +37,6 @@ flowchart TD
     P --> Q["log_request_memory_tool\npersists long-memory record"]
     Q --> R["Customer-facing decision, quote total, and notes"]
 
-    S["Schema hardening"] --> D
-    S --> E
-    S --> F
     U["Workflow context priming\nlets empty or partial tool calls recover safely"] --> F
     U --> I
     T["Tool-result extractor maps multi-tool step outputs back to the correct tool"] --> G
