@@ -1,9 +1,34 @@
 # multi-rag-agent-orchestrator-example
 an experiment to write down my AI agents in future
 
-# Showcase
+This project implements a five-agent workflow for the fictional Munder Difflin paper company. The system reads customer quote and fulfillment requests, maps request items to the supported catalog, checks inventory feasibility, generates pricing, and produces a final decision while writing transactions and long-memory records.
+
+## Showcase
 
 ![image](./main.png)
+
+The script supports three terminal modes:
+
+- `showcase`: premium customer-facing dashboard
+- `debug`: raw agent and tool trace output
+- `quiet`: no live trace, only final result
+
+Run the project with:
+
+```powershell
+cd C:\Users\Thinkpad\Documents\course_5\bambam\project
+pip install -r requirements.txt
+python .\project_starter.py
+```
+
+To switch modes:
+
+```powershell
+$env:MUNDER_DISPLAY_MODE='debug'
+python .\project_starter.py
+```
+
+## Agent Workflow Diagram
 
 ```mermaid
 flowchart LR
@@ -52,124 +77,60 @@ flowchart LR
     SF3 -->|"memory_log_summary"| O
 
     O -->|"decision, quote total, notes"| R["Customer-Facing Result"]
-
 ```
 
+## Architecture Reflection
 
-# Flowchart Explanation
+The architecture uses one orchestrator plus four specialist agents because the project constraints allow at most five agents, and the workflow naturally separates into four business functions: request understanding, inventory reasoning, quote generation, and final fulfillment. This separation keeps responsibilities clear and prevents overlap. The request-analysis agent handles unstructured customer text, which is the most LLM-heavy part of the system. The inventory agent is responsible only for feasibility and reorder planning. The quote agent focuses on historical pricing context and quote generation. The synthesis agent is the only component allowed to make the final approval decision and persist the result.
 
-## Customer request enters the orchestrator
+The orchestrator was chosen as the control layer so that no specialist agent needs to understand the entire business process. Instead, each agent returns structured outputs through tools, and the orchestrator passes validated state from one stage to the next. This design makes the flow easier to debug and easier to explain: request analysis creates structured demand, inventory evaluates feasibility, quote produces price, and synthesis combines both into a business decision.
 
-The OrchestratorAgent is the top-level controller. It creates a fresh request state, resets workflow context, chooses the display mode (showcase, debug, or quiet), and runs the request through analysis, inventory, quote, and synthesis in order.
+The request-analysis stage uses three tools because the incoming request contains three different kinds of information: metadata, raw item lines, and normalized catalog mappings. The normalization tool was designed to rely on embeddings-backed similarity plus lexical scoring because customer phrasing is variable and future requests may not match exact catalog wording. The inventory and quote stages are separated because they solve different business problems even though they use the same normalized item list as input. This also makes it possible to improve pricing logic later without changing inventory logic, or vice versa.
 
-## Request analysis begins
-The RequestAnalysisAgent is responsible for understanding the request. It does not directly mutate the business state; instead, it calls tools that validate and structure what it inferred.
+The synthesis stage exists so that the final decision is made only after all supporting evidence is available. That avoids premature approval decisions in upstream agents and keeps database writes centralized. The result is a pipeline where each agent has a distinct role, each tool has a clear purpose, and the orchestrator owns sequencing and state flow.
 
-### Metadata extraction
+## Workflow Explanation
 
-analyze_request_metadata_tool validates request-level fields such as intent, urgency, request_date, delivery_deadline, and the request_profile fields like job_type, order_size, event_type, and mood. It also stores these values in workflow context so later tools can recover even if the agent omits arguments.
+The workflow begins when the `OrchestratorAgent` receives a customer request and creates a fresh request state. It sends the request to the `RequestAnalysisAgent`, which extracts metadata, parses line items, and normalizes those items to the supported catalog. Once normalized items exist, the orchestrator passes them to the `InventoryRetrievalAgent`, which checks stock levels, shortages, reorder needs, and delivery feasibility. In parallel business terms, the same normalized items also feed the `QuoteRetrievalAgent`, which retrieves similar historical quotes and generates a structured price.
 
-### Parsed item extraction
-parse_request_items_tool validates item rows like raw_name, quantity, and unit. If the agent fails to pass items, it can reconstruct them from the raw request text using the helper parsing pipeline.
+After inventory and quote outputs are available, the orchestrator sends everything to the `SynthesisFulfillmentAgent`. That final agent decides whether the request should be `approved_full`, `approved_partial`, `delayed`, or `declined`. It then writes approved sales and stock-order transactions and logs the completed request outcome to long-term memory. The final output shown to the customer is a concise decision, quote total, and note summary.
 
-### Normalization into the supported catalog
-normalize_request_items_tool is the catalog-matching step. In the current design, the agent is allowed to call it with {}, and the tool reads parsed items from workflow context, then runs normalize_request_items(...).
+## Performance Evaluation
 
-#### How normalization works internally
+The latest [test_results.csv](test_results.csv) contains 20 processed sample requests. The evaluation results show:
 
-For each parsed item:
+- `9` requests changed the cash balance
+- `9` requests were `approved_full`
+- `8` requests were `approved_partial`
+- `17` total requests were fulfilled if full and partial approvals are both counted
+- `3` requests were not fulfilled, all with `delayed` decisions
 
-`resolve_catalog_item(...)` tries alias memory first.
-Then it uses embedding similarity as the primary signal against the supported catalog.
-Lexical scoring and keyword heuristics act as support and tie-breakers.
-The result is classified as `SUPPORTED`, `UNSUPPORTED`, or `AMBIGUOUS`.
+The unfulfilled requests were not random failures. Their notes show business reasons that are consistent with the workflow:
 
-#### Quantity normalization
+- request `13`: supported items missed the requested deadline
+- request `15`: some items were unsupported and another supported item missed the deadline
+- request `18`: multiple supported items missed the requested deadline
 
-If an item is supported, `convert_item_quantity(...)` converts units like reams into normalized internal units such as sheets. This ensures inventory and quoting operate on a consistent quantity system.
+These results are a strength because they show that the system does not approve every request blindly. It can still fulfill many requests successfully, but it also blocks or delays requests when inventory timing or catalog support makes fulfillment unsafe.
 
-Request analysis output
-The result of stage 1 is a validated split into:
+## Strengths Of The Implemented System
 
-```
-normalized_items
-unsupported_items
-ambiguous_items
-```
+One clear strength is the separation of concerns. Because the workflow is divided into request analysis, inventory, quote, and synthesis, each stage is easier to reason about and can be tested independently. Another strength is the normalization pipeline. Embeddings-backed similarity allows the system to map flexible customer phrasing such as paper descriptors and variants into the supported catalog instead of requiring exact phrase matches.
 
-## Inventory stage starts
+The evaluation results also show that the system performs real business actions. Cash balances change across multiple requests, approved requests write transactions, and delayed requests remain documented with reasons.
 
-The `InventoryRetrievalAgent` checks whether supported items can actually be fulfilled. Like normalization, it can rely on workflow context, so assess_inventory_tool can work even if the agent omits the items argument.
+## Suggested Improvements
 
-### Inventory assessment
+1. Add a clarification loop for ambiguous or unsupported items. Right now, ambiguous or unsupported cases become notes in the final decision. A stronger version of the system could ask a follow-up question, suggest the nearest supported alternatives, and re-run the workflow with the clarified request.
 
-`assess_inventory_tool` looks up current stock for each supported normalized item, calculates:
+2. Improve historical quote retrieval and ranking. The current quote retrieval stage uses search terms from normalized items and request metadata, which works, but it could be improved with semantic similarity over historical quote text and stronger weighting for event type, order size, and item overlap.
 
-```
-available
-shortage
-needs_reorder
-estimated_delivery
-feasible
-```
-It uses `get_stock_level(...)`, and `get_supplier_delivery_date(...)` to estimate replenishment timing.
+3. Refine fulfillment timing and supplier planning. Delivery feasibility is currently based on stock levels and supplier date estimation, but the model could be extended with supplier-specific lead times, reorder cost optimization, and prioritization rules for partial fulfillment.
 
-### Reorder planning
+## Submission Notes
 
-`build_reorder_plan_tool` converts shortages into structured reorder actions. If an item is short, this stage generates the quantity to order and the expected supplier delivery date.
+This repository includes:
 
-## Quote stage starts
-
-The `QuoteRetrievalAgent` handles pricing. It does not decide approval; it only finds relevant historical context and computes a quote.
-
-### Historical quote retrieval
-
-`retrieve_similar_quotes_tool` searches quote history using normalized item names plus request metadata. This gives the pricing engine historical examples without changing catalog truth.
-
-### Quote generation
-
-`generate_quote_tool` computes:
-
-```
-base_total from current catalog prices
-optional discount behavior using historical context
-final_total
-pricing notes and explanation
-```
-
-## Synthesis stage starts
-The SynthesisFulfillmentAgent combines all prior results. It receives normalized items, unsupported/ambiguous items, inventory results, reorder plan, and quote result.
-
-## Final decision
-
-`finalize_decision_tool` decides whether the request is:
-
-```
-approved_full
-approved_partial
-delayed
-declined
-```
-
-This decision is based on supportability, ambiguity, inventory feasibility, and pricing.
-
-## Transaction writing
-
-`write_transactions_tool` writes approved sales transactions and approved reorder transactions into the database. This is where the workflow becomes operational, not just analytical.
-
-
-## Long-memory logging
-
-`log_request_memory_tool` stores the completed request outcome in persistent memory. That includes the original request, profile, normalized items, unsupported items, decision, quote total, delivery feasibility, and notes.
-
-## Customer-facing response
-
-After synthesis, the orchestrator formats the final plain-text result with `build_decision_response(...)`. In `showcase` mode, `WorkflowShowcase` renders the live dashboard; in `debug` mode, raw agent traces are shown; in `quiet` mode, only the final result is returned.
-
-## Safety rails around the whole flow
-
-Three important support systems sit around the main pipeline:
-
-* Pydantic schema hardening ensures tool inputs/outputs are valid.
-* Workflow context priming lets empty or partial tool calls recover safely.
-* `_extract_tool_result(...)` and fallback logic allow the orchestrator to recover when an agent produces incomplete or malformed intermediate output.
+- the implemented agent workflow in [project_starter.py](project_starter.py)
+- the workflow diagram and explanation in this README
+- the recorded sample-run results in [test_results.csv](test_results.csv)
