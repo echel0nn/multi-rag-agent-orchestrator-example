@@ -7,39 +7,19 @@ an experiment to write down my AI agents in future
 
 ```mermaid
 flowchart TD
-    A["Customer request text"] --> B["OrchestratorAgent"]
+    A["Customer Request"] --> B["OrchestratorAgent"]
     B --> C["RequestAnalysisAgent"]
-    C --> C1["LLM infers metadata"]
-    C --> C2["LLM extracts parsed items"]
-    C --> C3["LLM triggers context-aware normalization step"]
-    C1 --> D["analyze_request_metadata_tool\nvalidates metadata schema"]
-    C2 --> E["parse_request_items_tool\nvalidates parsed item schema"]
-    C3 --> F["normalize_request_items_tool\nreads parsed items from workflow context"]
-    F --> F1["Emb`edding similarity + lexical scoring\nmap raw names to supported catalog items"]
-    F1 --> F2["NormalizationResult\nsupported / unsupported / ambiguous"]
-    D --> G["Orchestrator stores validated request state"]
-    E --> G
-    F2 --> G
-
-    G --> H["InventoryRetrievalAgent"]
-    H --> I["assess_inventory_tool\nreads normalized items from workflow context"]
-    I --> J["build_reorder_plan_tool\ncreates replenishment actions"]
-
-    G --> K["QuoteRetrievalAgent"]
-    K --> L["retrieve_similar_quotes_tool\nfetches historical pricing context"]
-    L --> M["generate_quote_tool\ncomputes quote total and notes"]
-
-    J --> N["SynthesisFulfillmentAgent"]
-    M --> N
-    G --> N
-    N --> O["finalize_decision_tool\nchooses approved_full / partial / delayed / declined"]
-    O --> P["write_transactions_tool\nwrites sales and stock-order transactions"]
-    P --> Q["log_request_memory_tool\npersists long-memory record"]
-    Q --> R["Customer-facing decision, quote total, and notes"]
-
-    U["Workflow context priming\nlets empty or partial tool calls recover safely"] --> F
-    U --> I
-    T["Tool-result extractor maps multi-tool step outputs back to the correct tool"] --> G
+    C --> D["Extract Metadata And Items"]
+    D --> E["Normalize Items To Catalog"]
+    E --> F["InventoryRetrievalAgent"]
+    F --> G["Check Stock And Build Reorder Plan"]
+    E --> H["QuoteRetrievalAgent"]
+    H --> I["Retrieve Similar Quotes And Build Pricing"]
+    G --> J["SynthesisFulfillmentAgent"]
+    I --> J
+    J --> K["Make Final Decision"]
+    K --> L["Write Transactions And Log Memory"]
+    L --> M["Customer-Facing Result"]
 ```
 
 
