@@ -1,0 +1,61 @@
+request_id,request_date,cash_balance,inventory_value,response
+1,2025-04-01,45124.7,4875.3,"Decision: approved_full
+Quote Total: $65.00
+Notes: None"
+2,2025-04-03,45124.7,4875.3,"Decision: approved_partial
+Quote Total: $133.00
+Notes: 1 item(s) were unsupported."
+3,2025-04-04,45124.7,4875.3,"Decision: approved_full
+Quote Total: $11,637.50
+Notes: None"
+4,2025-04-05,45198.95,4801.05,"Decision: approved_full
+Quote Total: $95.00
+Notes: None"
+5,2025-04-05,45246.45,4751.05,"Decision: approved_full
+Quote Total: $128.25
+Notes: None"
+6,2025-04-06,45246.45,4751.05,"Decision: approved_full
+Quote Total: $77.00
+Notes: None"
+7,2025-04-07,45239.45,4751.05,"Decision: approved_partial
+Quote Total: $263.50
+Notes: 1 item(s) were unsupported."
+8,2025-04-07,45239.45,4751.05,"Decision: approved_full
+Quote Total: $612.00
+Notes: None"
+9,2025-04-07,45259.45,4731.05,"Decision: approved_partial
+Quote Total: $20.00
+Notes: 2 item(s) were unsupported."
+13,2025-04-08,45259.45,4731.05,"Decision: delayed
+Quote Total: $0.00
+Notes: 2 supported item(s) miss the requested deadline."
+12,2025-04-08,45259.45,4731.05,"Decision: approved_full
+Quote Total: $52.00
+Notes: None"
+10,2025-04-08,45259.45,4731.05,"Decision: approved_full
+Quote Total: $137.75
+Notes: None"
+11,2025-04-08,45259.45,4731.05,"Decision: approved_full
+Quote Total: $146.30
+Notes: None"
+14,2025-04-09,45255.2,4731.05,"Decision: approved_partial
+Quote Total: $63.75
+Notes: 2 supported item(s) miss the requested deadline."
+15,2025-04-12,44822.450000000004,4660.049999999999,"Decision: delayed
+Quote Total: $0.00
+Notes: 2 item(s) were unsupported.; 1 supported item(s) miss the requested deadline."
+16,2025-04-13,44811.200000000004,4660.049999999999,"Decision: approved_partial
+Quote Total: $25.00
+Notes: 2 supported item(s) miss the requested deadline."
+17,2025-04-14,44809.0,4591.25,"Decision: approved_partial
+Quote Total: $45.00
+Notes: 1 item(s) were unsupported.; 3 supported item(s) miss the requested deadline."
+18,2025-04-14,44809.0,4591.25,"Decision: delayed
+Quote Total: $0.00
+Notes: 3 supported item(s) miss the requested deadline."
+19,2025-04-15,44809.0,4591.25,"Decision: approved_partial
+Quote Total: $142.50
+Notes: 2 supported item(s) miss the requested deadline."
+20,2025-04-17,44458.600000000006,4852.65,"Decision: approved_partial
+Quote Total: $1,062.50
+Notes: 1 item(s) were unsupported."
