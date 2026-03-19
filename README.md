@@ -119,7 +119,7 @@ One clear strength is the separation of concerns. Because the workflow is divide
 
 The evaluation results also show that the system performs real business actions. Cash balances change across multiple requests, approved requests write transactions, and delayed requests remain documented with reasons.
 
-## Suggested Improvements
+## Future Improvements
 
 1. Add a clarification loop for ambiguous or unsupported items. Right now, ambiguous or unsupported cases become notes in the final decision. A stronger version of the system could ask a follow-up question, suggest the nearest supported alternatives, and re-run the workflow with the clarified request.
 
